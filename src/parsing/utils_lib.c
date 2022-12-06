@@ -1,4 +1,4 @@
-#include "../my_shell.h"
+#include "../../my_shell.h"
 
 int ligneNb=0; //for debuging
 
@@ -27,8 +27,9 @@ char *getPrompt()
 
 void print_string_list(string_list* list){
     while (list!=NULL){
-        printf("[%s]\n",list->string);
+        //printf("[@%x][%s]\n",list,list->string);
         list=list->next;
     }
 }
+
 

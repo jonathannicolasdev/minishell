@@ -3,7 +3,7 @@ LIBFTNAME = libft.a
 LIBFTPATH = ./libft
 
 SRC_DIR = ./src/
-SRC = my_parser_test.c my_shell_test.c utils_lib_test.c
+SRC = parsing/my_parser.c parsing/my_shell.c parsing/utils_lib.c parsing/pre_processor.c
 
 OBJS = ${addprefix ${SRC_DIR}, ${SRC:.c=.o}}
 

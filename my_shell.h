@@ -5,6 +5,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <string.h>
+#include <fcntl.h>
 
 typedef enum
 {
@@ -12,15 +13,8 @@ typedef enum
     INPUT_NEXT_LINE,    //<<
     OUTPUT_FILE_CREATE, // > fichier_output.txt
     OUTPUT_FILE_APPEND, // >> fichier_output.txt
-    PIPE_ ,             // |
-    SEMICOLON,          // ;
+    NO_REDIR            // no redirection
 } t_io_direction;
-
-typedef enum
-{
-    BUILTIN,
-    EXTERNAL
-} t_command_type;
 
 typedef struct string_list_
 {
@@ -36,11 +30,10 @@ typedef struct redirect_list_
 } redirect_list;
 
 typedef struct t_parsed_cmd_ {
-    t_command_type type;
     char *name;    
+    int is_piped;
     string_list *arguments;
-    redirect_list *input_direction;
-    redirect_list *output_direction;
+    redirect_list *redirections;
 } t_parsed_cmd;
 
 typedef struct t_command_line_
@@ -50,10 +43,36 @@ typedef struct t_command_line_
 
 } t_parsed_cmd_list;
 
+typedef struct {
+    char *name;
+    char *path;    
+    char **argv;
+    int argc;
+    int in_desc;
+    int out_desc;
+    int is_piped;
+} t_parsed_cmd_managed;
+
+typedef struct t_parsed_cmd_managed_list_
+{
+    t_parsed_cmd_managed *command;
+    struct t_parsed_cmd_managed_list_ *next;
+
+} t_parsed_cmd_managed_list;
+
 char *getPrompt();
+void lg();
 t_parsed_cmd_list *parse(char *);
 void print_string_list(string_list *list);
 void print_parsing_struct(t_parsed_cmd_list *command_line);
 void fill_env_cmd(t_parsed_cmd *cmd);
+char* get_my_env(char* env_var); // sachant que la table d'environement est une donnee globale
+void set_my_env(char* env_var, char* env_val); // pareil
+t_parsed_cmd_managed_list *preprocess(t_parsed_cmd_list *command_line);
+t_parsed_cmd_managed_list *launch_parsing_process(char *cmdLine);
+void print_managed_parsing_struct(t_parsed_cmd_managed_list *parsed_cmd_managed_list);
+
+
+
 
 

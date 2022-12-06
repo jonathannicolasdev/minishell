@@ -1,4 +1,4 @@
-#include "my_shell.h"
+#include "../../my_shell.h"
 
 redirect_list *append_new_redirect(redirect_list **redir, char *source, t_io_direction direction)
 {
@@ -21,6 +21,39 @@ redirect_list *append_new_redirect(redirect_list **redir, char *source, t_io_dir
   return cell;
 }
 
+t_parsed_cmd_list *append_new_pcl(t_parsed_cmd_list **parsed_cmd_list, t_parsed_cmd *parsed_cmd)
+{
+  t_parsed_cmd_list *cell = (t_parsed_cmd_list *)malloc(sizeof(t_parsed_cmd_list));
+  t_parsed_cmd_list *ptr;
+
+  cell->command = parsed_cmd;
+  cell->next = NULL;
+  if (*parsed_cmd_list == NULL)
+  {
+    *parsed_cmd_list = cell;
+    return cell;
+  }
+  ptr = *parsed_cmd_list;
+  while (ptr->next != NULL)
+  {
+    ptr = ptr->next;
+  }
+  ptr->next = cell;
+  return cell;
+}
+
+t_parsed_cmd *create_init_parsed_cmd()
+{
+  t_parsed_cmd *parsed_cmd;
+  parsed_cmd = (t_parsed_cmd *)malloc(sizeof(t_parsed_cmd));
+  parsed_cmd->name = (char *)NULL;
+  parsed_cmd->arguments = (string_list *)NULL;
+  parsed_cmd->redirections = (redirect_list *)NULL;
+  parsed_cmd->is_piped = 0;
+
+  return parsed_cmd;
+}
+
 int is_redirect_token(char *c, int token_size)
 {
   if (token_size == 1)
@@ -29,9 +62,33 @@ int is_redirect_token(char *c, int token_size)
   }
   if (token_size == 2)
   {
+    if (strlen(c) != 2)
+      return 0;
     return (*c == '<' || *c == '>') && *c == *++c;
   }
   return 0;
+}
+
+int redirect_token_type(char *c)
+{
+  if (strlen(c) == 1)
+  {
+    switch (*c)
+    {
+    case '<':
+      return INPUT_FILE;
+    case '>':
+      return OUTPUT_FILE_CREATE;
+    }
+  }
+  if (strlen(c) == 2)
+  {
+    if ((*c == '<') && *(c + 1) == '<')
+      return INPUT_NEXT_LINE;
+    if ((*c == '>') && *(c + 1) == '>')
+      return OUTPUT_FILE_APPEND;
+  }
+  return NO_REDIR;
 }
 
 int correct_envvar_char(char c)
@@ -85,9 +142,9 @@ void print_parsing_struct(t_parsed_cmd_list *command_line)
       }
       printf("\n");
     }
-    if (cmd->input_direction != NULL)
+    if (cmd->redirections != NULL)
     {
-      redirect_list *ptr_redir = cmd->input_direction;
+      redirect_list *ptr_redir = cmd->redirections;
       while (ptr_redir != NULL)
       {
         switch (ptr_redir->direction)
@@ -98,37 +155,17 @@ void print_parsing_struct(t_parsed_cmd_list *command_line)
         case INPUT_NEXT_LINE:
           printf("Redirection d'entree << depuis %s\n", ptr_redir->source);
           break;
-        case PIPE_:
-          printf("Redirection d'entree | \n");
-          break;
-        case SEMICOLON:
-          printf("Redirection d'entree SEMICOLON ; \n");
-        }
-        ptr_redir = ptr_redir->next;
-      }
-    }
-    if (cmd->output_direction != NULL)
-    {
-      redirect_list *ptr_redir = cmd->output_direction;
-      while (ptr_redir != NULL)
-      {
-        switch (ptr_redir->direction)
-        {
         case OUTPUT_FILE_CREATE:
           printf("Redirection de sortie > vers %s\n", ptr_redir->source);
           break;
         case OUTPUT_FILE_APPEND:
           printf("Redirection de sortie >> vers %s\n", ptr_redir->source);
-          break;
-        case PIPE_:
-          printf("Redirection de sortie | \n");
-          break;
-        case SEMICOLON:
-          printf("Redirection de sortie SEMICOLON ; \n");
         }
         ptr_redir = ptr_redir->next;
       }
     }
+    if (cmd->is_piped)
+      printf("Redirection de sortie de type PIPE |\n");
     command_line = command_line->next;
   }
 }
@@ -185,162 +222,104 @@ string_list *recursive_extract_tokens(char *text)
   return token;
 }
 
-void init_parsing_struct(t_parsed_cmd_list *command_line)
-{
-}
-
-t_parsed_cmd_list *parse(char *cmdline)
+int parse_fill_parsed_cmd(t_parsed_cmd *parsed_cmd, string_list *from_token, string_list *to_token, char separator)
 {
   string_list *tokens;
   string_list *ptr_arg;
-  redirect_list *ptr_redi_in;
-  redirect_list *ptr_redi_out;
-  char *str;
+  redirect_list *ptr_redir;
+  // printf("parse_fill from token[@%x] to token[@%x]\n", from_token, to_token);
 
-  tokens = recursive_extract_tokens(cmdline);
-  print_string_list(tokens);
-
-  // fill_env_tokens(tokens);
-  //  print_string_list(tokens);
-  t_parsed_cmd_list *parsed_cmd_list = NULL, *first_parsed_cmd_list;
-  int first = 1;
-  int last_piped = 0;
-  int last_semicolon = 0;
-  t_parsed_cmd *parsed_cmd;
-  while (tokens != NULL)
+  if (!is_redirect_token(from_token->string, 1))
   {
-    if (first)
+    parsed_cmd->name = strdup(from_token->string);
+    from_token = from_token->next;
+  }
+  ptr_arg = NULL;
+  ptr_redir = NULL;
+  while (from_token != to_token)
+  {
+    if (redirect_token_type(from_token->string) != NO_REDIR)
     {
-      int no_command = 0;
-      parsed_cmd = (t_parsed_cmd *)malloc(sizeof(t_parsed_cmd));
-      if (is_redirect_token(tokens->string, 1))
+      if (from_token->next == NULL)
       {
-        no_command = 1;
-        parsed_cmd->name = strdup("");
+        perror("syntax error near unexpected token `newline'");
+        return -1;
       }
-      else
-        parsed_cmd->name = strdup(tokens->string);
-      parsed_cmd->arguments = (string_list *)NULL;
-      parsed_cmd->input_direction = (redirect_list *)NULL;
-      parsed_cmd->output_direction = (redirect_list *)NULL;
-
-      ptr_arg = NULL;
-      ptr_redi_in = NULL;
-      ptr_redi_out = NULL;
-      if (last_piped)
+      if (redirect_token_type(from_token->next->string) != NO_REDIR)
       {
-        ptr_redi_in = (redirect_list *)malloc(sizeof(redirect_list));
-        ptr_redi_in->direction = PIPE_;
-        ptr_redi_in->next = NULL;
-        parsed_cmd->input_direction = ptr_redi_in;
-        last_piped = 0;
-      }
-      if (last_semicolon)
-      {
-        ptr_redi_in = (redirect_list *)malloc(sizeof(redirect_list));
-        ptr_redi_in->direction = SEMICOLON;
-        ptr_redi_in->next = NULL;
-        parsed_cmd->input_direction = ptr_redi_in;
-        last_semicolon = 0;
+        printf("syntax error near unexpected token `%c'", from_token->next->string[0]);
+        return -1;
       }
 
-      first = 0;
-
-      if (parsed_cmd_list == NULL)
-      {
-        parsed_cmd_list = (t_parsed_cmd_list *)malloc(sizeof(t_parsed_cmd_list));
-        first_parsed_cmd_list = parsed_cmd_list;
-      }
-      else
-      {
-        parsed_cmd_list->next = (t_parsed_cmd_list *)malloc(sizeof(t_parsed_cmd_list));
-        parsed_cmd_list = parsed_cmd_list->next;
-      }
-      parsed_cmd_list->command = parsed_cmd;
-      parsed_cmd_list->next = NULL;
-      if (!no_command)
-        tokens = tokens->next;
-      continue;
-    }
-    if (strlen(tokens->string) == 2 && is_redirect_token(tokens->string, 2))
-    {
-      if (tokens->string[0] == '>')
-      {
-        if (tokens->next==NULL){
-          perror("syntax error near unexpected token `newline'");
-          return NULL;
-        }
-        if (is_redirect_token(tokens->next->string,1)){
-          printf("syntax error near unexpected token `%c'",tokens->next->string[0]);
-          return NULL;
-        }        
-        str = strdup(tokens->next->string);
-        ptr_redi_out = append_new_redirect(&(parsed_cmd->output_direction), str, OUTPUT_FILE_APPEND);
-      }
-      else
-      {
-        str = strdup(tokens->next->string);
-        ptr_redi_in = append_new_redirect(&(parsed_cmd->input_direction), str, INPUT_NEXT_LINE);
-      }
-      tokens = tokens->next;
+      ptr_redir = append_new_redirect(&(parsed_cmd->redirections), strdup(from_token->next->string), redirect_token_type(from_token->string));
+      from_token = from_token->next;
+      if (from_token == to_token)
+        break;
     }
     else
     {
-      if (is_redirect_token(tokens->string, 1))
+      string_list *arg = create_arg_from_token(from_token->string);
+      if (parsed_cmd->arguments == NULL)
       {
-        if (tokens->string[0] == '>')
-        {
-          str = strdup(tokens->next->string);
-          ptr_redi_out = append_new_redirect(&(parsed_cmd->output_direction), str, OUTPUT_FILE_CREATE);
-          tokens = tokens->next;
-        }
-        else if (tokens->string[0] == '<')
-        {
-          str = strdup(tokens->next->string);
-          ptr_redi_in = append_new_redirect(&(parsed_cmd->input_direction), str, INPUT_FILE);
-          tokens = tokens->next;
-        }
-        if (tokens->string[0] == '|')
-        {
-          ptr_redi_out = append_new_redirect(&(parsed_cmd->output_direction), NULL, PIPE_);
-          first = 1;
-          last_piped = 1;
-        }
-        if (tokens->string[0] == ';')
-        {
-          ptr_redi_out = append_new_redirect(&(parsed_cmd->output_direction), NULL, SEMICOLON);
-          first = 1;
-          last_semicolon = 1;
-        }
+        parsed_cmd->arguments = arg;
+        ptr_arg = arg;
       }
       else
       {
-        string_list *arg = create_arg_from_token(tokens->string);
-        if (parsed_cmd->arguments == NULL)
+        ptr_arg->next = arg;
+        ptr_arg = ptr_arg->next;
+      }
+    }
+    from_token = from_token->next;
+  }
+  return 1;
+}
+
+t_parsed_cmd_list *create_parsed_cmd_list(string_list *tokens)
+{
+  t_parsed_cmd *parsed_cmd;
+  t_parsed_cmd_list *parsed_cmd_list = NULL;
+  string_list *from_token;
+
+  from_token = tokens;
+  parsed_cmd = create_init_parsed_cmd();
+  while (tokens != NULL)
+  {
+    if (tokens->next != NULL)
+    {
+      if (tokens->next->string[0] == '|' || tokens->next->string[0] == ';')
+      {
+        parsed_cmd->is_piped = (tokens->next->string[0] == '|');
+        if (parse_fill_parsed_cmd(parsed_cmd, from_token, tokens, tokens->next->string[0]) == -1)
+          return NULL;
+        append_new_pcl(&parsed_cmd_list, parsed_cmd);
+        tokens = tokens->next;
+        if (tokens->next != NULL)
         {
-          parsed_cmd->arguments = arg;
-          ptr_arg = arg;
-        }
-        else
-        {
-          ptr_arg->next = arg;
-          ptr_arg = ptr_arg->next;
+          parsed_cmd = create_init_parsed_cmd();
+          from_token = tokens->next;
         }
       }
     }
+    else
+    {
+      parse_fill_parsed_cmd(parsed_cmd, from_token, tokens, ';');
+      append_new_pcl(&parsed_cmd_list, parsed_cmd);
+      break;
+    }
     tokens = tokens->next;
   }
-
-  return first_parsed_cmd_list;
+  return parsed_cmd_list;
 }
 
-void fill_env_cmd_list(t_parsed_cmd_list *parsed_cmd_list){
-  while(parsed_cmd_list!=NULL){
-      fill_env_cmd(parsed_cmd_list->command);
-      parsed_cmd_list=parsed_cmd_list->next;
+void fill_env_cmd_list(t_parsed_cmd_list *parsed_cmd_list)
+{
+  while (parsed_cmd_list != NULL)
+  {
+    fill_env_cmd(parsed_cmd_list->command);
+    parsed_cmd_list = parsed_cmd_list->next;
   }
 }
-
 
 void free_parsing_struct(t_parsed_cmd_list *command_line)
 {
@@ -349,7 +328,7 @@ void free_parsing_struct(t_parsed_cmd_list *command_line)
 void remove_double_quotes(char *str)
 {
   int i;
-  //printf("<%s> len is %d\n",str,strlen(str));
+  // printf("<%s> len is %d\n",str,strlen(str));
   if ((str[0] == '\'' || str[0] == '"') && str[0] == str[strlen(str) - 1])
   {
     for (i = 0; i < (strlen(str) - 2); i++)
@@ -403,19 +382,20 @@ char *fill_env_token(char *token)
         if (token[envEnd + 1])
           strcat(newTokenVal, &(token[envEnd + 1]));
         free(token);
-        remove_double_quotes(newTokenLen);
+        remove_double_quotes(newTokenVal);
         return newTokenVal;
       }
-      else{
+      else
+      {
         remove_double_quotes(token);
         return token;
       }
-        
     }
   }
-  else{
-        remove_double_quotes(token);
-        return token;
+  else
+  {
+    remove_double_quotes(token);
+    return token;
   }
 }
 
@@ -432,32 +412,45 @@ void fill_env_cmd(t_parsed_cmd *cmd)
       arglist = arglist->next;
     }
   }
-  if (cmd->input_direction != NULL)
+  if (cmd->redirections != NULL)
   {
-    redirect_list *ptr_redir = cmd->input_direction;
+    redirect_list *ptr_redir = cmd->redirections;
     while (ptr_redir != NULL)
     {
-      switch (ptr_redir->direction)
-      {
-      case INPUT_FILE:
-      case INPUT_NEXT_LINE:
-        ptr_redir->source = fill_env_token(ptr_redir->source);
-      }
+      ptr_redir->source = fill_env_token(ptr_redir->source);
       ptr_redir = ptr_redir->next;
     }
   }
-  if (cmd->output_direction != NULL)
+}
+
+t_parsed_cmd_managed_list *launch_parsing_process(char *cmdLine)
+{
+  t_parsed_cmd_list *parsed_cmd_list;
+  t_parsed_cmd_managed_list *parsed_cmd_managed_list;
+  string_list *tokens;
+
+  // 1- extraction des tokens
+  tokens = recursive_extract_tokens(cmdLine);
+  if (tokens == NULL)
+    return NULL;
+  print_string_list(tokens);
+
+  // 2- parsing des tokens et generation de la liste des commandes
+  parsed_cmd_list = create_parsed_cmd_list(tokens);
+
+  if (parsed_cmd_list != NULL)
   {
-    redirect_list *ptr_redir = cmd->output_direction;
-    while (ptr_redir != NULL)
-    {
-      switch (ptr_redir->direction)
-      {
-      case OUTPUT_FILE_CREATE:
-      case OUTPUT_FILE_APPEND:
-        ptr_redir->source = fill_env_token(ptr_redir->source);
-      }
-      ptr_redir = ptr_redir->next;
-    }
+    // 3- Lecture des variable d'environement
+    fill_env_cmd_list(parsed_cmd_list);
+
+    print_parsing_struct(parsed_cmd_list);
+
+    // 4- ouverture des fichiers de redirection et creation des structure de commande pretes a l'execution
+    parsed_cmd_managed_list = preprocess(parsed_cmd_list);
+    printf("%p\n",parsed_cmd_managed_list);
+    print_managed_parsing_struct(parsed_cmd_managed_list);
+    return parsed_cmd_managed_list;
   }
+  else
+    return NULL;
 }
