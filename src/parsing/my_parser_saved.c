@@ -1,4 +1,4 @@
-#include "my_shell.h"
+#include "../../my_shell.h"
 
 redirect_list *append_new_redirect(redirect_list **redir, char *source, t_io_direction direction)
 {
@@ -217,6 +217,7 @@ string_list *recursive_extract_tokens(char *text)
   strncpy(tokenValue, text, tk_len);
   tokenValue[tk_len] = '\0';
   token = create_token(tokenValue);
+  printf("%s\n", token->string);
   token->next = recursive_extract_tokens(text + tk_len);
 
   return token;
@@ -232,13 +233,11 @@ int parse_fill_parsed_cmd(t_parsed_cmd *parsed_cmd, string_list *from_token, str
   if (!is_redirect_token(from_token->string, 1))
   {
     parsed_cmd->name = strdup(from_token->string);
-    if (from_token == to_token)
-      return 1;
     from_token = from_token->next;
   }
   ptr_arg = NULL;
   ptr_redir = NULL;
-  while (from_token != NULL)
+  while (from_token != to_token)
   {
     if (redirect_token_type(from_token->string) != NO_REDIR)
     {
@@ -272,8 +271,6 @@ int parse_fill_parsed_cmd(t_parsed_cmd *parsed_cmd, string_list *from_token, str
         ptr_arg = ptr_arg->next;
       }
     }
-    if (from_token == to_token)
-      break;
     from_token = from_token->next;
   }
   return 1;
@@ -437,7 +434,7 @@ t_parsed_cmd_managed_list *launch_parsing_process(char *cmdLine)
   tokens = recursive_extract_tokens(cmdLine);
   if (tokens == NULL)
     return NULL;
-  // print_string_list(tokens);
+  print_string_list(tokens);
 
   // 2- parsing des tokens et generation de la liste des commandes
   parsed_cmd_list = create_parsed_cmd_list(tokens);
@@ -451,7 +448,7 @@ t_parsed_cmd_managed_list *launch_parsing_process(char *cmdLine)
 
     // 4- ouverture des fichiers de redirection et creation des structure de commande pretes a l'execution
     parsed_cmd_managed_list = preprocess(parsed_cmd_list);
-    // printf("%p\n", parsed_cmd_managed_list);
+    printf("%p\n", parsed_cmd_managed_list);
     print_managed_parsing_struct(parsed_cmd_managed_list);
     return parsed_cmd_managed_list;
   }
