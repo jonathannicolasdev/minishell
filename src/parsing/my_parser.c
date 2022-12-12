@@ -1,4 +1,4 @@
-#include "my_shell.h"
+#include "../../my_shell.h"
 
 redirect_list *append_new_redirect(redirect_list **redir, char *source, t_io_direction direction)
 {
@@ -95,7 +95,7 @@ int correct_envvar_char(char c)
 {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
-
+/*
 int redirect_position(char *str, int len)
 {
   for (int i = 0; i < len; i++)
@@ -105,7 +105,10 @@ int redirect_position(char *str, int len)
   }
   return -1;
 }
+*/
 
+
+/*
 string_list *create_token(char *value)
 {
   string_list *token;
@@ -113,7 +116,7 @@ string_list *create_token(char *value)
   token->string = value;
   return token;
 }
-
+*/
 string_list *create_arg_from_token(char *value)
 {
   string_list *arg;
@@ -169,7 +172,7 @@ void print_parsing_struct(t_parsed_cmd_list *command_line)
     command_line = command_line->next;
   }
 }
-
+/*
 string_list *recursive_extract_tokens(char *text)
 {
   string_list *token;
@@ -221,6 +224,7 @@ string_list *recursive_extract_tokens(char *text)
 
   return token;
 }
+*/
 
 int parse_fill_parsed_cmd(t_parsed_cmd *parsed_cmd, string_list *from_token, string_list *to_token, char separator)
 {

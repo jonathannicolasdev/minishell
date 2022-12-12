@@ -62,6 +62,11 @@ typedef struct t_parsed_cmd_managed_list_
 
 char *getPrompt();
 void lg();
+t_parsed_cmd_managed_list *launch_parsing_process(char *cmdLine);
+string_list	*recursive_extract_tokens(char *text);
+int	redirect_position(char *str, int len);
+
+
 t_parsed_cmd_list *parse(char *);
 void print_string_list(string_list *list);
 void print_parsing_struct(t_parsed_cmd_list *command_line);
@@ -69,7 +74,6 @@ void fill_env_cmd(t_parsed_cmd *cmd);
 char* get_my_env(char* env_var); // sachant que la table d'environement est une donnee globale
 void set_my_env(char* env_var, char* env_val); // pareil
 t_parsed_cmd_managed_list *preprocess(t_parsed_cmd_list *command_line);
-t_parsed_cmd_managed_list *launch_parsing_process(char *cmdLine);
 void print_managed_parsing_struct(t_parsed_cmd_managed_list *parsed_cmd_managed_list);
 
 
