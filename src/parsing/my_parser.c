@@ -1,5 +1,5 @@
 #include "../../my_shell.h"
-
+/*
 redirect_list *append_new_redirect(redirect_list **redir, char *source, t_io_direction direction)
 {
   redirect_list *cell = (redirect_list *)malloc(sizeof(redirect_list));
@@ -20,7 +20,9 @@ redirect_list *append_new_redirect(redirect_list **redir, char *source, t_io_dir
   ptr->next = cell;
   return cell;
 }
+*/
 
+/*
 t_parsed_cmd_list *append_new_pcl(t_parsed_cmd_list **parsed_cmd_list, t_parsed_cmd *parsed_cmd)
 {
   t_parsed_cmd_list *cell = (t_parsed_cmd_list *)malloc(sizeof(t_parsed_cmd_list));
@@ -41,7 +43,9 @@ t_parsed_cmd_list *append_new_pcl(t_parsed_cmd_list **parsed_cmd_list, t_parsed_
   ptr->next = cell;
   return cell;
 }
+*/
 
+/*
 t_parsed_cmd *create_init_parsed_cmd()
 {
   t_parsed_cmd *parsed_cmd;
@@ -53,7 +57,9 @@ t_parsed_cmd *create_init_parsed_cmd()
 
   return parsed_cmd;
 }
+*/
 
+/*
 int is_redirect_token(char *c, int token_size)
 {
   if (token_size == 1)
@@ -68,7 +74,8 @@ int is_redirect_token(char *c, int token_size)
   }
   return 0;
 }
-
+*/
+/*
 int redirect_token_type(char *c)
 {
   if (strlen(c) == 1)
@@ -90,6 +97,7 @@ int redirect_token_type(char *c)
   }
   return NO_REDIR;
 }
+*/
 
 int correct_envvar_char(char c)
 {
@@ -117,6 +125,8 @@ string_list *create_token(char *value)
   return token;
 }
 */
+
+/*
 string_list *create_arg_from_token(char *value)
 {
   string_list *arg;
@@ -125,6 +135,7 @@ string_list *create_arg_from_token(char *value)
   arg->next = NULL;
   return arg;
 }
+*/
 
 void print_parsing_struct(t_parsed_cmd_list *command_line)
 {
@@ -225,7 +236,7 @@ string_list *recursive_extract_tokens(char *text)
   return token;
 }
 */
-
+/*
 int parse_fill_parsed_cmd(t_parsed_cmd *parsed_cmd, string_list *from_token, string_list *to_token, char separator)
 {
   string_list *tokens;
@@ -282,7 +293,10 @@ int parse_fill_parsed_cmd(t_parsed_cmd *parsed_cmd, string_list *from_token, str
   }
   return 1;
 }
+*/
 
+
+/*
 t_parsed_cmd_list *create_parsed_cmd_list(string_list *tokens)
 {
   t_parsed_cmd *parsed_cmd;
@@ -319,7 +333,7 @@ t_parsed_cmd_list *create_parsed_cmd_list(string_list *tokens)
   }
   return parsed_cmd_list;
 }
-
+*/
 void fill_env_cmd_list(t_parsed_cmd_list *parsed_cmd_list)
 {
   while (parsed_cmd_list != NULL)

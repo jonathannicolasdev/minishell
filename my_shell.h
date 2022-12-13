@@ -65,7 +65,7 @@ void lg();
 t_parsed_cmd_managed_list *launch_parsing_process(char *cmdLine);
 string_list	*recursive_extract_tokens(char *text);
 int	redirect_position(char *str, int len);
-
+t_parsed_cmd_list *create_parsed_cmd_list(string_list *tokens);
 
 t_parsed_cmd_list *parse(char *);
 void print_string_list(string_list *list);
