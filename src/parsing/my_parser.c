@@ -98,11 +98,12 @@ int redirect_token_type(char *c)
   return NO_REDIR;
 }
 */
-
+/*
 int correct_envvar_char(char c)
 {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
+*/
 /*
 int redirect_position(char *str, int len)
 {
@@ -334,6 +335,8 @@ t_parsed_cmd_list *create_parsed_cmd_list(string_list *tokens)
   return parsed_cmd_list;
 }
 */
+
+/*
 void fill_env_cmd_list(t_parsed_cmd_list *parsed_cmd_list)
 {
   while (parsed_cmd_list != NULL)
@@ -342,11 +345,12 @@ void fill_env_cmd_list(t_parsed_cmd_list *parsed_cmd_list)
     parsed_cmd_list = parsed_cmd_list->next;
   }
 }
+*/
 
 void free_parsing_struct(t_parsed_cmd_list *command_line)
 {
 }
-
+/*
 void remove_double_quotes(char *str)
 {
   int i;
@@ -360,7 +364,8 @@ void remove_double_quotes(char *str)
     str[i] = '\0';
   }
 }
-
+*/
+/*
 char *fill_env_token(char *token)
 {
   if (token[0] != '\'')
@@ -420,7 +425,9 @@ char *fill_env_token(char *token)
     return token;
   }
 }
+*/
 
+/*
 void fill_env_cmd(t_parsed_cmd *cmd)
 {
 
@@ -444,7 +451,7 @@ void fill_env_cmd(t_parsed_cmd *cmd)
     }
   }
 }
-
+*/
 t_parsed_cmd_managed_list *launch_parsing_process(char *cmdLine)
 {
   t_parsed_cmd_list *parsed_cmd_list;
