@@ -38,10 +38,10 @@ t_parsed_cmd_managed_list *append_new_cmd(t_parsed_cmd_managed_list **firstcell)
     return cell;
 }
 
-char **create_argv(string_list *arguments, int *length)
+char **create_argv(char *cmd_name, string_list *arguments, int *length)
 {
     char **argv;
-    int len = 0;
+    int len = 1;
     string_list *arguments_ = arguments;
     while (arguments != NULL)
     {
@@ -54,7 +54,8 @@ char **create_argv(string_list *arguments, int *length)
 
     argv = malloc(len * sizeof(char *));
     arguments = arguments_;
-    int i = 0;
+    argv[0]=strdup(cmd_name);
+    int i = 1;
     while (arguments != NULL)
     {
         argv[i++] = strdup(arguments->string);
@@ -127,7 +128,7 @@ t_parsed_cmd_managed_list *preprocess(t_parsed_cmd_list *command_line)
             return NULL;
         ptr->command->in_desc = fd[0];
         ptr->command->out_desc = fd[1];
-        ptr->command->argv = create_argv(cmd->arguments, &ptr->command->argc);
+        ptr->command->argv = create_argv(ptr->command->name, cmd->arguments, &ptr->command->argc);
         ptr->command->is_piped = cmd->is_piped;
         command_line = command_line->next;
     }
